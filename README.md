@@ -1,6 +1,6 @@
 # VL.IO.Raft
 
-A [vvvv gamma](https://vvvv.org) library for distributed leader election using the [Raft consensus algorithm](https://raft.github.io/).
+Distributed leader election for [vvvv gamma](https://vvvv.org) using the [Raft consensus algorithm](https://raft.github.io/).
 
 Built on [DotNext.Net.Cluster](https://dotnet.github.io/dotNext/features/cluster/raft.html) (v5.x, net8.0).
 
@@ -16,7 +16,8 @@ Runs a Raft consensus cluster among a fixed set of known machines and surfaces t
 |-----|------|---------|-------------|
 | Hosts | Spread\<string\> | | IP addresses or hostnames of **all** machines in the cluster, in the same order on every machine |
 | Port | int | 3262 | TCP port all machines listen on |
-| LocalId | int | 0 | Index of **this** machine in the Hosts list. Also controls election priority: lower index = shorter election timeout = more likely to become leader |
+| LocalId | int | 0 | Index of **this** machine in the Hosts list. When Prioritize is enabled, lower index means higher election priority |
+| Prioritize | bool | false | When true, scales election timeouts by LocalId so the node with the lowest index is most likely to win. When false, all nodes have equal chance (standard Raft behaviour) |
 | Enable | bool | false | Set to true to start the cluster |
 
 ### Outputs
@@ -39,7 +40,9 @@ All machines should converge on the same leader within ~1 second. If the current
 
 ### Election Priority
 
-Standard Raft uses randomised election timeouts to break ties — the node that times out first becomes a candidate and usually wins. This library scales the timeout with `LocalId`:
+Standard Raft uses randomised election timeouts to break ties — the node that times out first becomes a candidate and usually wins. With `Prioritize = false` (the default) all nodes use the same timeout range and have equal chance of winning.
+
+When `Prioritize = true`, the timeout is scaled by `LocalId`:
 
 ```
 LowerElectionTimeout = 150 + LocalId × 50 ms
@@ -47,6 +50,14 @@ UpperElectionTimeout = 300 + LocalId × 50 ms
 ```
 
 Node 0 uses 150–300 ms, node 1 uses 200–350 ms, and so on. In a healthy cluster, node 0 will almost always win. If node 0 is offline, node 1 wins, and so on.
+
+### Node Rejoin Behaviour
+
+When a machine crashes and restarts, it reconnects to the cluster automatically. The current leader sends heartbeats to all known members; the rejoining node receives one within a heartbeat interval and updates its `Leader` and `IsLeader` outputs accordingly.
+
+This works without any extra configuration because the static member list means all nodes always know each other's addresses.
+
+One thing to be aware of: if the rejoining node was the previous leader, the remaining nodes will have already elected a replacement (provided a majority stayed online). The rejoining node becomes a follower under the new leader and **will not automatically reclaim leadership** — even if it has the lowest `LocalId`. It would only win a subsequent election if the current leader goes offline.
 
 ### Notes
 
@@ -88,3 +99,9 @@ DotNext 6.x requires net10 and has an incompatible wire protocol. To upgrade:
 - [IRaftCluster API](https://dotnet.github.io/dotNext/api/DotNext.Net.Cluster.Consensus.Raft.IRaftCluster.html)
 - [IClusterMember API](https://dotnet.github.io/dotNext/api/DotNext.Net.Cluster.IClusterMember.html)
 - [Raft paper (Ongaro & Ousterhout, 2014)](https://raft.github.io/raft.pdf)
+
+---
+
+## Credits
+
+Initial development was sponsored by [Refik Anadol Studio](https://refikanadolstudio.com/).
