@@ -1,6 +1,8 @@
 using DotNext.Net.Cluster;
 using DotNext.Net.Cluster.Consensus.Raft;
+using Microsoft.Extensions.Logging;
 using System.Net;
+using VL.Core;
 using VL.Core.Import;
 using VL.Lib.Collections;
 using VL.Model;
@@ -10,17 +12,27 @@ namespace VL.IO.Raft;
 /// <summary>
 /// Runs a Raft consensus cluster among a fixed set of known machines and surfaces the elected leader.
 /// All machines must use the same Hosts list and Port. Set LocalId to this machine's index in the list;
-/// lower index means higher election priority (more likely to become leader).
+/// When Prioritize is enabled, lower index means higher election priority (more likely to become leader).
 /// </summary>
 [ProcessNode]
 public sealed class LeaderElection : IDisposable
 {
+    private readonly ILogger _logger;
     private RaftCluster? _cluster;
-    private int _inputHash;
+    private Spread<string>? _lastHosts;
+    private int _lastPort;
+    private int _lastLocalId;
+    private bool _lastPrioritize;
     private volatile string _leader = "";
     private volatile bool _isLeader;
     private volatile bool _hasLeader;
     private volatile string _error = "";
+
+    /// <inheritdoc />
+    public LeaderElection(NodeContext nodeContext)
+    {
+        _logger = nodeContext.AppHost.LoggerFactory.CreateLogger<LeaderElection>();
+    }
 
     /// <summary>
     /// Updates leader election state. Enable must be true for the cluster to start.
@@ -31,7 +43,8 @@ public sealed class LeaderElection : IDisposable
     /// <param name="error">Error message if the cluster failed to start, otherwise empty.</param>
     /// <param name="hosts">IP addresses or hostnames of all machines in the cluster, in the same order on every machine.</param>
     /// <param name="port">TCP port all machines listen on.</param>
-    /// <param name="localId">Index of this machine in the Hosts list. Lower index means higher election priority (more likely to become leader).</param>
+    /// <param name="localId">Index of this machine in the Hosts list. When Prioritize is enabled, lower index means higher election priority (more likely to become leader).</param>
+    /// <param name="prioritize">When true, scales election timeouts by LocalId so the node with the lowest index is most likely to win. When false, all nodes have equal chance (standard Raft behaviour).</param>
     /// <param name="enable">Set to true to start the cluster.</param>
     public void Update(
         out string leader,
@@ -41,24 +54,29 @@ public sealed class LeaderElection : IDisposable
         Spread<string> hosts,
         int port = 3262,
         int localId = 0,
+        bool prioritize = false,
         bool enable = false)
     {
-        var hash = ComputeHash(hosts, port, localId);
-
         if (enable)
         {
-            if (hash != _inputHash)
+            if (!ReferenceEquals(hosts, _lastHosts)
+                || port != _lastPort
+                || localId != _lastLocalId
+                || prioritize != _lastPrioritize)
             {
                 StopCluster();
-                _inputHash = hash;
+                _lastHosts = hosts;
+                _lastPort = port;
+                _lastLocalId = localId;
+                _lastPrioritize = prioritize;
                 if (localId >= 0 && localId < hosts.Count)
-                    StartCluster(hosts, port, localId);
+                    StartCluster(hosts, port, localId, prioritize);
             }
         }
         else if (_cluster != null)
         {
             StopCluster();
-            _inputHash = 0;
+            _lastHosts = null;
         }
 
         leader = _leader;
@@ -67,18 +85,22 @@ public sealed class LeaderElection : IDisposable
         error = _error;
     }
 
-    private void StartCluster(Spread<string> hosts, int port, int localId)
+    private void StartCluster(Spread<string> hosts, int port, int localId, bool prioritize)
     {
         _error = "";
         var localEndpoint = MakeEndpoint(hosts[localId], port);
         var config = new RaftCluster.TcpConfiguration(localEndpoint)
         {
             ColdStart = true,
+        };
+
+        if (prioritize)
+        {
             // Lower ID → shorter timeout → becomes candidate first → wins election.
             // Node 0: 150–300 ms, node 1: 200–350 ms, etc.
-            LowerElectionTimeout = 150 + localId * 50,
-            UpperElectionTimeout = 300 + localId * 50,
-        };
+            config.LowerElectionTimeout = 150 + localId * 50;
+            config.UpperElectionTimeout = 300 + localId * 50;
+        }
 
         var storage = config.UseInMemoryConfigurationStorage();
         for (int i = 0; i < hosts.Count; i++)
@@ -88,7 +110,12 @@ public sealed class LeaderElection : IDisposable
         _cluster.LeaderChanged += OnLeaderChanged;
 
         _ = _cluster.StartAsync(CancellationToken.None).ContinueWith(
-            t => _error = t.Exception?.GetBaseException().Message ?? "Start failed",
+            t =>
+            {
+                var ex = t.Exception?.GetBaseException();
+                _error = ex?.Message ?? "Start failed";
+                _logger.LogError(ex, "Raft cluster failed to start");
+            },
             CancellationToken.None,
             TaskContinuationOptions.OnlyOnFaulted,
             TaskScheduler.Default);
@@ -99,7 +126,12 @@ public sealed class LeaderElection : IDisposable
         if (_cluster is null) return;
         _cluster.LeaderChanged -= OnLeaderChanged;
         try { _cluster.StopAsync(CancellationToken.None).Wait(3000); }
-        catch { }
+        catch (Exception ex)
+        {
+            var inner = ex.GetBaseException();
+            _error = inner.Message;
+            _logger.LogError(inner, "Raft cluster failed to stop");
+        }
         _cluster.Dispose();
         _cluster = null;
         _leader = "";
@@ -114,17 +146,8 @@ public sealed class LeaderElection : IDisposable
         _isLeader = leader != null && !leader.IsRemote;
     }
 
+    /// <inheritdoc />
     public void Dispose() => StopCluster();
-
-    private static int ComputeHash(Spread<string> hosts, int port, int localId)
-    {
-        var hc = new HashCode();
-        hc.Add(port);
-        hc.Add(localId);
-        for (int i = 0; i < hosts.Count; i++)
-            hc.Add(hosts[i]);
-        return hc.ToHashCode();
-    }
 
     private static IPEndPoint MakeEndpoint(string host, int port)
     {
