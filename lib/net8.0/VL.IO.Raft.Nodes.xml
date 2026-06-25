@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>VL.IO.Raft.Nodes</name>
+    </assembly>
+    <members>
+        <member name="T:VL.IO.Raft.LeaderElection">
+            <summary>
+            Runs a Raft consensus cluster among a fixed set of known machines and surfaces the elected leader.
+            All machines must use the same Hosts list and Port. Set LocalId to this machine's index in the list;
+            When Prioritize is enabled, lower index means higher election priority (more likely to become leader).
+            </summary>
+        </member>
+        <member name="M:VL.IO.Raft.LeaderElection.#ctor(VL.Core.NodeContext)">
+            <inheritdoc />
+        </member>
+        <member name="M:VL.IO.Raft.LeaderElection.Update(System.String@,System.Boolean@,System.Boolean@,System.String@,VL.Lib.Collections.Spread{System.String},System.Int32,System.Int32,System.Boolean,System.Boolean)">
+            <summary>
+            Updates leader election state. Enable must be true for the cluster to start.
+            </summary>
+            <param name="leader">Host:port of the current leader, empty if no leader is known yet.</param>
+            <param name="isLeader">True if this machine is the current leader.</param>
+            <param name="hasLeader">True if any leader is known.</param>
+            <param name="error">Error message if the cluster failed to start, otherwise empty.</param>
+            <param name="hosts">IP addresses or hostnames of all machines in the cluster, in the same order on every machine.</param>
+            <param name="port">TCP port all machines listen on.</param>
+            <param name="localId">Index of this machine in the Hosts list. When Prioritize is enabled, lower index means higher election priority (more likely to become leader).</param>
+            <param name="prioritize">When true, scales election timeouts by LocalId so the node with the lowest index is most likely to win. When false, all nodes have equal chance (standard Raft behaviour).</param>
+            <param name="enable">Set to true to start the cluster.</param>
+        </member>
+        <member name="M:VL.IO.Raft.LeaderElection.Dispose">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>
