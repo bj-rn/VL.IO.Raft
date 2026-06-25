@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37203.1 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VL.IO.Raft.Nodes", "VL.IO.Raft.Nodes.csproj", "{985F891C-1C4C-055B-B795-4CEA9E65E8E4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{985F891C-1C4C-055B-B795-4CEA9E65E8E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{985F891C-1C4C-055B-B795-4CEA9E65E8E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{985F891C-1C4C-055B-B795-4CEA9E65E8E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{985F891C-1C4C-055B-B795-4CEA9E65E8E4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {48290B30-1055-4496-A618-41AA61C60331}
+	EndGlobalSection
+EndGlobal
