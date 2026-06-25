@@ -9,7 +9,7 @@
     <projectUrl>https://github.com/bj-rn/VL.IO.Raft</projectUrl>
     <repository type="git" url="https://github.com/bj-rn/VL.IO.Raft.git" />
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>A vvvv gamma library for distributed leader election using the Raft consensus algorithm.</description>
+    <description>Distributed leader election for vvvv gamma using the Raft consensus algorithm.</description>
     <tags>VL, vvvv, gamma, raft, consensus, leader election, cluster, dotnext</tags>
     <license type="expression">MIT</license>
     <readme>docs\README.md</readme>
