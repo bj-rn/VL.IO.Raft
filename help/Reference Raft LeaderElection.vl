@@ -1,0 +1,196 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document xmlns:p="property" xmlns:r="reflection" Id="AZStpWnj4hLN9WHSub6npE" LanguageVersion="2025.7.3" Version="0.128">
+  <NugetDependency Id="EgcjNKK50lkM8Bg28mJ0zp" Location="VL.CoreLib" Version="2025.7.3" />
+  <Patch Id="EEyBnQV5posOXpt6NXZUDr">
+    <Canvas Id="JipxkfG3tVxNq3N1yiqDxj" DefaultCategory="Main" BordersChecked="false" CanvasType="FullCategory" />
+    <!--
+
+    ************************ Application ************************
+
+-->
+    <Node Name="Application" Bounds="100,100" Id="HJSJFG8ZzviOM6vlAuADM2">
+      <p:NodeReference>
+        <Choice Kind="ContainerDefinition" Name="Process" />
+        <CategoryReference Kind="Category" Name="Primitive" />
+      </p:NodeReference>
+      <Patch Id="LCxwK2sSAqqLC1ReaMrH6y">
+        <Canvas Id="MljqZ20HG4QMewic710vwt" CanvasType="Group">
+          <Node Bounds="82,656,82,19" Id="Saa61hlkZfMP7WSijLhlrT">
+            <p:NodeReference LastCategoryFullName="VL.IO.Raft" LastDependency="VL.IO.Raft.vl">
+              <Choice Kind="NodeFlag" Name="Node" Fixed="true" />
+              <Choice Kind="ProcessAppFlag" Name="LeaderElection" />
+            </p:NodeReference>
+            <p:HelpFocus p:Assembly="VL.Lang" p:Type="VL.Model.HelpPriority">High</p:HelpFocus>
+            <Pin Id="MWfomXuklmiOrBgnuczdb1" Name="Hosts" Kind="InputPin" />
+            <Pin Id="ENAHDL8tZbgNMUm4Lyujiq" Name="Port" Kind="InputPin" />
+            <Pin Id="AMxKebFtnjnPSADsdqi2z2" Name="Local Id" Kind="InputPin" />
+            <Pin Id="JYosfY7y2SyMpkrMetH17K" Name="Enable" Kind="InputPin" />
+            <Pin Id="PNBuM4fF1PQLzcsENm7EMS" Name="Leader" Kind="OutputPin" />
+            <Pin Id="RT07dyJTyQnPNmZF31BOyN" Name="Is Leader" Kind="OutputPin" />
+            <Pin Id="NBcVhkXzknxLcTt06UaF5j" Name="Has Leader" Kind="OutputPin" />
+            <Pin Id="Aujzn5vUS8MOkRPxEYs9fo" Name="Error" Kind="OutputPin" />
+          </Node>
+          <Pad Id="AMiBSMh2CWKN8ISSDerS2j" Comment="Hosts" Bounds="84,336,73,34" ShowValueBox="true" isIOBox="true">
+            <p:TypeAnnotation LastCategoryFullName="Collections" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="Spread" />
+              <p:TypeArguments>
+                <TypeReference LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+                  <Choice Kind="TypeFlag" Name="String" />
+                </TypeReference>
+              </p:TypeArguments>
+            </p:TypeAnnotation>
+            <p:Value>
+              <Item>127.0.0.1</Item>
+            </p:Value>
+          </Pad>
+          <Pad Id="JoeTtUCCTfsLLwbTYN2gl7" Comment="Port" Bounds="110,437,35,15" ShowValueBox="true" isIOBox="true" Value="3262">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="Integer32" />
+            </p:TypeAnnotation>
+          </Pad>
+          <Pad Id="JlF7oOZj7AhOAkqpR1ASC6" Comment="Local Id" Bounds="135,546,35,15" ShowValueBox="true" isIOBox="true" Value="0">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="Integer32" />
+            </p:TypeAnnotation>
+          </Pad>
+          <Pad Id="FL99SHAAb0gN3ZjXbSh3ho" Comment="Enable" Bounds="161,611,35,35" ShowValueBox="true" isIOBox="true" Value="True">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="ImmutableTypeFlag" Name="Boolean" />
+            </p:TypeAnnotation>
+            <p:ValueBoxSettings>
+              <p:buttonmode p:Assembly="VL.UI.Forms" p:Type="VL.HDE.PatchEditor.Editors.ButtonModeEnum">Toggle</p:buttonmode>
+            </p:ValueBoxSettings>
+          </Pad>
+          <Pad Id="KysifOKatgIPNboRxN40V1" Comment="Leader" Bounds="84,986,176,19" ShowValueBox="true" isIOBox="true" />
+          <Pad Id="HnwwOdWsBmqMViQ9yOSF7p" Comment="Is Leader" Bounds="110,866,35,35" ShowValueBox="true" isIOBox="true" />
+          <Pad Id="KEWQ9TgCz4VPJCdFTegF3s" Comment="Has Leader" Bounds="135,781,35,35" ShowValueBox="true" isIOBox="true" />
+          <Pad Id="EtJDXO4pt1MNIzrPN1goRO" Comment="Error" Bounds="161,706,149,16" ShowValueBox="true" isIOBox="true" />
+          <Pad Id="UWgcI7MEg73L0IBPV3dAFo" Bounds="73,83,611,32" ShowValueBox="true" isIOBox="true" Value="Runs a Raft consensus cluster among a fixed set of known machines and surfaces the elected leader.">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="String" />
+            </p:TypeAnnotation>
+            <p:ValueBoxSettings>
+              <p:fontsize p:Type="Int32">9</p:fontsize>
+              <p:stringtype p:Assembly="VL.Core" p:Type="VL.Core.StringType">Comment</p:stringtype>
+            </p:ValueBoxSettings>
+          </Pad>
+          <Pad Id="A3q80p9fwkQNZmWjoiDcE7" Bounds="84,295,301,38" ShowValueBox="true" isIOBox="true" Value="IP addresses or hostnames of all machines in the cluster, in the same order on every machine">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="String" />
+            </p:TypeAnnotation>
+            <p:ValueBoxSettings>
+              <p:fontsize p:Type="Int32">9</p:fontsize>
+              <p:stringtype p:Assembly="VL.Core" p:Type="VL.Core.StringType">Comment</p:stringtype>
+            </p:ValueBoxSettings>
+          </Pad>
+          <Pad Id="JtqbfbhwVGMLxKpJC72B85" Bounds="110,395,132,40" ShowValueBox="true" isIOBox="true" Value="TCP port all machines listen on.">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="String" />
+            </p:TypeAnnotation>
+            <p:ValueBoxSettings>
+              <p:fontsize p:Type="Int32">9</p:fontsize>
+              <p:stringtype p:Assembly="VL.Core" p:Type="VL.Core.StringType">Comment</p:stringtype>
+            </p:ValueBoxSettings>
+          </Pad>
+          <Pad Id="EjUVhmJ7SVqMd7ZHkPgKTQ" Bounds="135,501,379,41" ShowValueBox="true" isIOBox="true" Value="Index of this machine in the Hosts list. Lower index means higher election priority (more likely to become leader).">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="String" />
+            </p:TypeAnnotation>
+            <p:ValueBoxSettings>
+              <p:fontsize p:Type="Int32">9</p:fontsize>
+              <p:stringtype p:Assembly="VL.Core" p:Type="VL.Core.StringType">Comment</p:stringtype>
+            </p:ValueBoxSettings>
+          </Pad>
+          <ControlPoint Id="MusV0Ag50sdMHcQd8xdQCY" Bounds="135,732" />
+          <Pad Id="FkIfuqsnvqdQAHgjfofUOv" Bounds="161,589,193,21" ShowValueBox="true" isIOBox="true" Value="Set to true to start the cluster.">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="String" />
+            </p:TypeAnnotation>
+            <p:ValueBoxSettings>
+              <p:fontsize p:Type="Int32">9</p:fontsize>
+              <p:stringtype p:Assembly="VL.Core" p:Type="VL.Core.StringType">Comment</p:stringtype>
+            </p:ValueBoxSettings>
+          </Pad>
+          <Pad Id="FObKfkU09zZNTg7CUOMlDM" Bounds="84,1013,219,40" ShowValueBox="true" isIOBox="true" Value="Host:port of the current leader, empty if no leader is known yet.">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="String" />
+            </p:TypeAnnotation>
+            <p:ValueBoxSettings>
+              <p:fontsize p:Type="Int32">9</p:fontsize>
+              <p:stringtype p:Assembly="VL.Core" p:Type="VL.Core.StringType">Comment</p:stringtype>
+            </p:ValueBoxSettings>
+          </Pad>
+          <Pad Id="Fy5vlqqGzncL2onYbdo0H6" Bounds="110,910,143,39" ShowValueBox="true" isIOBox="true" Value="True if this machine is the current leader.">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="String" />
+            </p:TypeAnnotation>
+            <p:ValueBoxSettings>
+              <p:fontsize p:Type="Int32">9</p:fontsize>
+              <p:stringtype p:Assembly="VL.Core" p:Type="VL.Core.StringType">Comment</p:stringtype>
+            </p:ValueBoxSettings>
+          </Pad>
+          <Pad Id="FXpfGGkWdc0QJZzuQQ74dI" Bounds="135,823,173,20" ShowValueBox="true" isIOBox="true" Value="True if any leader is known.">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="String" />
+            </p:TypeAnnotation>
+            <p:ValueBoxSettings>
+              <p:fontsize p:Type="Int32">9</p:fontsize>
+              <p:stringtype p:Assembly="VL.Core" p:Type="VL.Core.StringType">Comment</p:stringtype>
+            </p:ValueBoxSettings>
+          </Pad>
+          <Pad Id="KvWIIEzuezzMq78H17Ba5c" Bounds="161,725,242,40" ShowValueBox="true" isIOBox="true" Value="Error message if the cluster failed to start, otherwise empty. Optional.">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="String" />
+            </p:TypeAnnotation>
+            <p:ValueBoxSettings>
+              <p:fontsize p:Type="Int32">9</p:fontsize>
+              <p:stringtype p:Assembly="VL.Core" p:Type="VL.Core.StringType">Comment</p:stringtype>
+            </p:ValueBoxSettings>
+          </Pad>
+          <Pad Id="H96KyY05Q6HNVnyP2upXJ3" Bounds="73,126,714,41" ShowValueBox="true" isIOBox="true" Value="Connect the same Hosts spread to all instances (e.g. `[&quot;192.168.1.10&quot;, &quot;192.168.1.11&quot;, &quot;192.168.1.12&quot;]`).&#xD;&#xA;Set Local Id to this machine's index in that list (0 on the first machine, 1 on the second, etc.).">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="String" />
+            </p:TypeAnnotation>
+            <p:ValueBoxSettings>
+              <p:fontsize p:Type="Int32">9</p:fontsize>
+              <p:stringtype p:Assembly="VL.Core" p:Type="VL.Core.StringType">Comment</p:stringtype>
+            </p:ValueBoxSettings>
+          </Pad>
+          <Pad Id="TQaSh567uwELs7U0ZX6UeC" Bounds="73,190,182,19" ShowValueBox="true" isIOBox="true" Value="Built on DotNext.Net.Cluster">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="String" />
+            </p:TypeAnnotation>
+            <p:ValueBoxSettings>
+              <p:fontsize p:Type="Int32">9</p:fontsize>
+              <p:stringtype p:Assembly="VL.Core" p:Type="VL.Core.StringType">Comment</p:stringtype>
+            </p:ValueBoxSettings>
+          </Pad>
+          <Pad Id="FvXbo8Un6u1MJ16o3dA4Od" Bounds="73,213,365,19" ShowValueBox="true" isIOBox="true" Value="https://dotnet.github.io/dotNext/features/cluster/raft.html">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="String" />
+            </p:TypeAnnotation>
+            <p:ValueBoxSettings>
+              <p:fontsize p:Type="Int32">9</p:fontsize>
+              <p:stringtype p:Assembly="VL.Core" p:Type="VL.Core.StringType">Link</p:stringtype>
+            </p:ValueBoxSettings>
+          </Pad>
+        </Canvas>
+        <Patch Id="NqcSDkRVgEnMEcGcWLjI20" Name="Create" />
+        <Patch Id="AhC0ww0sftGLyGzyIM0Uww" Name="Update" />
+        <ProcessDefinition Id="A2bvYCWFH4kOvEj4WeNO8J">
+          <Fragment Id="Jv2rTvgsXHzLpvPqUlwXkM" Patch="NqcSDkRVgEnMEcGcWLjI20" Enabled="true" />
+          <Fragment Id="UhmiMIrcm9bOxEKw1fWrsS" Patch="AhC0ww0sftGLyGzyIM0Uww" Enabled="true" />
+        </ProcessDefinition>
+        <Link Id="Eb9BSCPkbRoOhh3XGhLk7E" Ids="AMiBSMh2CWKN8ISSDerS2j,MWfomXuklmiOrBgnuczdb1" />
+        <Link Id="JsAOaUbS9qMNYckU33JdSd" Ids="JoeTtUCCTfsLLwbTYN2gl7,ENAHDL8tZbgNMUm4Lyujiq" />
+        <Link Id="T9obn8fUUkoMHopcpNKrNr" Ids="JlF7oOZj7AhOAkqpR1ASC6,AMxKebFtnjnPSADsdqi2z2" />
+        <Link Id="NQmhrfdxQzCPWzan0w0GoI" Ids="FL99SHAAb0gN3ZjXbSh3ho,JYosfY7y2SyMpkrMetH17K" />
+        <Link Id="L1z2pVHVNsBNblD4VzfFzq" Ids="PNBuM4fF1PQLzcsENm7EMS,KysifOKatgIPNboRxN40V1" />
+        <Link Id="T7vLs3od9ZMMHRLUgIL0Y5" Ids="RT07dyJTyQnPNmZF31BOyN,HnwwOdWsBmqMViQ9yOSF7p" />
+        <Link Id="DG6SL4AZ3e2N92uA3nKBON" Ids="NBcVhkXzknxLcTt06UaF5j,MusV0Ag50sdMHcQd8xdQCY,KEWQ9TgCz4VPJCdFTegF3s" />
+        <Link Id="RkW2sDnTlZpLLAxysVwvNb" Ids="Aujzn5vUS8MOkRPxEYs9fo,EtJDXO4pt1MNIzrPN1goRO" />
+      </Patch>
+    </Node>
+  </Patch>
+  <NugetDependency Id="EymhDmn79qNO0iJRvjwyBO" Location="VL.IO.Raft" Version="0.0.0" />
+</Document>
