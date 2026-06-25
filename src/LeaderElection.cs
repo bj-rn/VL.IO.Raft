@@ -102,9 +102,14 @@ public sealed class LeaderElection : IDisposable
             config.UpperElectionTimeout = 300 + localId * 50;
         }
 
+        // Only add peers — ColdStart registers the local node automatically.
+        // Adding self here too would create a duplicate and break leader detection on remote nodes.
         var storage = config.UseInMemoryConfigurationStorage();
         for (int i = 0; i < hosts.Count; i++)
-            storage.AddMember(MakeEndpoint(hosts[i], port));
+        {
+            if (i != localId)
+                storage.AddMember(MakeEndpoint(hosts[i], port));
+        }
 
         _cluster = new RaftCluster(config);
         _cluster.LeaderChanged += OnLeaderChanged;
