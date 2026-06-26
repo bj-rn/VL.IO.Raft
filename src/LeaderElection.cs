@@ -94,6 +94,10 @@ public sealed class LeaderElection : IDisposable
         var config = new RaftCluster.TcpConfiguration(localEndpoint)
         {
             LoggerFactory = _loggerFactory,
+            // All nodes bootstrap simultaneously with the same full member list.
+            // ColdStart = true means "start a new cluster / hold an initial election",
+            // as opposed to false which means "join an already-running cluster".
+            ColdStart = true,
         };
 
         if (prioritize)
