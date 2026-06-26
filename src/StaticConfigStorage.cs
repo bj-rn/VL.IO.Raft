@@ -1,72 +1,65 @@
+using DotNext.IO;
 using DotNext.Net.Cluster.Consensus.Raft.Membership;
 using System.Net;
 
 namespace VL.IO.Raft;
 
-// Wraps InMemoryClusterConfigurationStorage and exposes all N-1 non-self peer endpoints
-// via the typed ProposedConfiguration property — the path DotNext reads on startup to
-// build its internal members list. ActiveConfiguration starts empty; binary/Raft-internal
-// operations (LoadConfigurationAsync, ProposeAsync, ApplyAsync) are delegated to the inner
-// InMemory storage so DotNext can handle any subsequent membership commits correctly.
-sealed class StaticConfigStorage
-    : IClusterConfigurationStorage<EndPoint>,
-      IClusterConfigurationStorage,
-      IDisposable
+// Pre-seeds the proposed member set with all N-1 non-self peers before RaftCluster.StartAsync.
+// DotNext's startup sequence calls G.AddMemberAsync(self) then Ng.ApplyAsync().
+// Our ApplyAsync fires ActiveConfigurationChanged for all N members so the cluster starts
+// with full quorum knowledge instead of the default single-node view.
+sealed class StaticConfigStorage : IClusterConfigurationStorage<EndPoint>, IClusterConfigurationStorage, IDisposable
 {
-    private readonly IClusterConfigurationStorage<EndPoint> _innerGeneric;
-    private readonly IClusterConfigurationStorage _innerNonGeneric;
-    private readonly IDisposable _innerDisposable;
-    private readonly HashSet<EndPoint> _peers;
+    private readonly HashSet<EndPoint> _proposed;
+    private readonly HashSet<EndPoint> _active = new();
+    private event Func<EndPoint, bool, CancellationToken, ValueTask>? _changed;
 
-    internal StaticConfigStorage(IClusterConfigurationStorage<EndPoint> inner, IEnumerable<EndPoint> peers)
-    {
-        _innerGeneric = inner;
-        _innerNonGeneric = (IClusterConfigurationStorage)inner;
-        _innerDisposable = (IDisposable)inner;
-        _peers = new HashSet<EndPoint>(peers);
-    }
+    internal StaticConfigStorage(IEnumerable<EndPoint> nonSelfPeers)
+        => _proposed = new HashSet<EndPoint>(nonSelfPeers);
 
-    // ---- IClusterConfigurationStorage<EndPoint> ----
+    // DotNext calls this during StartAsync to add the local node
+    ValueTask<bool> IClusterConfigurationStorage<EndPoint>.AddMemberAsync(EndPoint ep, CancellationToken ct)
+        => ValueTask.FromResult(_proposed.Add(ep));
 
-    IReadOnlySet<EndPoint> IClusterConfigurationStorage<EndPoint>.ActiveConfiguration
-        => _innerGeneric.ActiveConfiguration;
+    ValueTask<bool> IClusterConfigurationStorage<EndPoint>.RemoveMemberAsync(EndPoint ep, CancellationToken ct)
+        => ValueTask.FromResult(_proposed.Remove(ep));
 
-    // Return all non-self peers as the proposed config.
-    // DotNext unions this with the local node to form its full members list.
+    IReadOnlySet<EndPoint> IClusterConfigurationStorage<EndPoint>.ActiveConfiguration => _active;
     IReadOnlySet<EndPoint>? IClusterConfigurationStorage<EndPoint>.ProposedConfiguration
-        => _peers.Count > 0 ? _peers : null;
-
-    ValueTask<bool> IClusterConfigurationStorage<EndPoint>.AddMemberAsync(EndPoint address, CancellationToken token)
-        => _innerGeneric.AddMemberAsync(address, token);
-
-    ValueTask<bool> IClusterConfigurationStorage<EndPoint>.RemoveMemberAsync(EndPoint address, CancellationToken token)
-        => _innerGeneric.RemoveMemberAsync(address, token);
+        => _proposed.Count > 0 ? _proposed : null;
 
     event Func<EndPoint, bool, CancellationToken, ValueTask>? IClusterConfigurationStorage<EndPoint>.ActiveConfigurationChanged
     {
-        add => _innerGeneric.ActiveConfigurationChanged += value;
-        remove => _innerGeneric.ActiveConfigurationChanged -= value;
+        add => _changed += value;
+        remove => _changed -= value;
     }
 
-    // ---- IClusterConfigurationStorage (non-generic, binary for Raft log replication) ----
+    // DotNext calls this after AddMemberAsync(self) — fire event for every member in proposed
+    async ValueTask IClusterConfigurationStorage.ApplyAsync(CancellationToken ct)
+    {
+        var toAdd = _proposed.Except(_active).ToList();
+        var toRemove = _active.Except(_proposed).ToList();
+        foreach (var ep in toRemove) { _active.Remove(ep); if (_changed is { } h) await h(ep, false, ct); }
+        foreach (var ep in toAdd)    { _active.Add(ep);    if (_changed is { } h) await h(ep, true,  ct); }
+    }
 
-    IClusterConfiguration IClusterConfigurationStorage.ActiveConfiguration
-        => _innerNonGeneric.ActiveConfiguration;
+    // Fingerprints must differ so DotNext doesn't treat the apply as a no-op
+    IClusterConfiguration IClusterConfigurationStorage.ActiveConfiguration  => new StubConfig(0L);
+    IClusterConfiguration? IClusterConfigurationStorage.ProposedConfiguration => _proposed.Count > 0 ? new StubConfig(1L) : null;
 
-    IClusterConfiguration? IClusterConfigurationStorage.ProposedConfiguration
-        => _innerNonGeneric.ProposedConfiguration;
+    ValueTask IClusterConfigurationStorage.LoadConfigurationAsync(CancellationToken ct) => ValueTask.CompletedTask;
+    ValueTask IClusterConfigurationStorage.ProposeAsync(IClusterConfiguration cfg, CancellationToken ct) => ValueTask.CompletedTask;
+    Task IClusterConfigurationStorage.WaitForApplyAsync(CancellationToken ct) => Task.CompletedTask;
 
-    ValueTask IClusterConfigurationStorage.LoadConfigurationAsync(CancellationToken token)
-        => _innerNonGeneric.LoadConfigurationAsync(token);
+    public void Dispose() { }
 
-    ValueTask IClusterConfigurationStorage.ProposeAsync(IClusterConfiguration configuration, CancellationToken token)
-        => _innerNonGeneric.ProposeAsync(configuration, token);
-
-    ValueTask IClusterConfigurationStorage.ApplyAsync(CancellationToken token)
-        => _innerNonGeneric.ApplyAsync(token);
-
-    Task IClusterConfigurationStorage.WaitForApplyAsync(CancellationToken token)
-        => _innerNonGeneric.WaitForApplyAsync(token);
-
-    public void Dispose() => _innerDisposable.Dispose();
+    sealed class StubConfig : IClusterConfiguration
+    {
+        internal StubConfig(long fingerprint) => Fingerprint = fingerprint;
+        public long Fingerprint { get; }
+        public long Length => 0L;
+        bool IDataTransferObject.IsReusable => true;
+        ValueTask IDataTransferObject.WriteToAsync<TWriter>(TWriter writer, CancellationToken token)
+            => ValueTask.CompletedTask;
+    }
 }

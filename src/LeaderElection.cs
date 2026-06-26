@@ -106,14 +106,10 @@ public sealed class LeaderElection : IDisposable
             config.UpperElectionTimeout = 300 + localId * 50;
         }
 
-        // DotNext reads ProposedConfiguration (typed IReadOnlySet<EndPoint>) to build its internal
-        // members list on startup. StaticConfigStorage wraps the InMemory storage and returns all
-        // N-1 non-self peers from that property so every node starts elections with the full cluster view.
-        var innerStorage = config.UseInMemoryConfigurationStorage();
         var peers = Enumerable.Range(0, hosts.Count)
             .Where(i => i != localId)
             .Select(i => (EndPoint)MakeEndpoint(hosts[i], port));
-        config.ConfigurationStorage = new StaticConfigStorage(innerStorage, peers);
+        config.ConfigurationStorage = new StaticConfigStorage(peers);
 
         _cluster = new RaftCluster(config);
         _cluster.LeaderChanged += OnLeaderChanged;
