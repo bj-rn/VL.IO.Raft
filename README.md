@@ -62,7 +62,7 @@ One thing to be aware of: if the rejoining node was the previous leader, the rem
 ### Notes
 
 - All machines must use the same `Hosts` list in the same order.
-- The cluster uses a static membership list (`ColdStart = true`). Nodes do not need to discover each other; they connect directly using the provided addresses. See [DotNext cold start docs](https://dotnet.github.io/dotNext/features/cluster/raft.html) for details on the alternative dynamic membership model.
+- The cluster uses a static membership list. All nodes are pre-registered in the active cluster configuration at startup — no discovery or designated bootstrap node is required. See [DotNext membership docs](https://dotnet.github.io/dotNext/features/cluster/raft.html) for details on the dynamic membership model.
 - Transport is TCP (no ASP.NET Core required). See [DotNext transport options](https://dotnet.github.io/dotNext/features/cluster/raft.html) for HTTP alternatives.
 - This library uses `ConsensusOnlyState` (the DotNext default) — no data is replicated, only the leader identity is established.
 
