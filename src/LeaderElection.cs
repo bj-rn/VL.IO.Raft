@@ -1,6 +1,7 @@
 using DotNext.Net.Cluster;
 using DotNext.Net.Cluster.Consensus.Raft;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Linq;
 using System.Net;
 using VL.Core;
@@ -25,6 +26,8 @@ public sealed class LeaderElection : IDisposable
     private int _lastPort;
     private int _lastLocalId;
     private bool _lastPrioritize;
+    private bool _lastLog = true;
+    private bool _log = true;
     private volatile string _leader = "";
     private volatile bool _isLeader;
     private volatile bool _hasLeader;
@@ -48,6 +51,7 @@ public sealed class LeaderElection : IDisposable
     /// <param name="port">TCP port all machines listen on.</param>
     /// <param name="localId">Index of this machine in the Hosts list. When Prioritize is enabled, lower index means higher election priority (more likely to become leader).</param>
     /// <param name="prioritize">When true, scales election timeouts by LocalId so the node with the lowest index is most likely to win. When false, all nodes have equal chance (standard Raft behaviour).</param>
+    /// <param name="log">When true (default), Raft internal messages are written to the vvvv log. Errors written to the Error pin are unaffected.</param>
     /// <param name="enable">Set to true to start the cluster.</param>
     public void Update(
         out string leader,
@@ -58,22 +62,25 @@ public sealed class LeaderElection : IDisposable
         int port = 3262,
         int localId = 0,
         bool prioritize = false,
-        bool enable = false)
+        [Pin(Visibility = PinVisibility.Optional)] bool log = true,
+        bool enable = false )
     {
         if (enable)
         {
             if (!ReferenceEquals(hosts, _lastHosts)
                 || port != _lastPort
                 || localId != _lastLocalId
-                || prioritize != _lastPrioritize)
+                || prioritize != _lastPrioritize
+                || log != _lastLog)
             {
                 StopCluster();
                 _lastHosts = hosts;
                 _lastPort = port;
                 _lastLocalId = localId;
                 _lastPrioritize = prioritize;
+                _lastLog = log;
                 if (localId >= 0 && localId < hosts.Count)
-                    StartCluster(hosts, port, localId, prioritize);
+                    StartCluster(hosts, port, localId, prioritize, log);
             }
         }
         else if (_cluster != null)
@@ -88,13 +95,14 @@ public sealed class LeaderElection : IDisposable
         error = _error;
     }
 
-    private void StartCluster(Spread<string> hosts, int port, int localId, bool prioritize)
+    private void StartCluster(Spread<string> hosts, int port, int localId, bool prioritize, bool log)
     {
         _error = "";
+        _log = log;
         var localEndpoint = MakeEndpoint(hosts[localId], port);
         var config = new RaftCluster.TcpConfiguration(localEndpoint)
         {
-            LoggerFactory = _loggerFactory,
+            LoggerFactory = log ? _loggerFactory : NullLoggerFactory.Instance,
             ColdStart = true,
         };
 
@@ -119,7 +127,7 @@ public sealed class LeaderElection : IDisposable
             {
                 var ex = t.Exception?.GetBaseException();
                 _error = ex?.Message ?? "Start failed";
-                _logger.LogError(ex, "Raft cluster failed to start");
+                if (_log) _logger.LogError(ex, "Raft cluster failed to start");
             },
             CancellationToken.None,
             TaskContinuationOptions.OnlyOnFaulted,
@@ -135,7 +143,7 @@ public sealed class LeaderElection : IDisposable
         {
             var inner = ex.GetBaseException();
             _error = inner.Message;
-            _logger.LogError(inner, "Raft cluster failed to stop");
+            if (_log) _logger.LogError(inner, "Raft cluster failed to stop");
         }
         _cluster.Dispose();
         _cluster = null;
@@ -149,6 +157,7 @@ public sealed class LeaderElection : IDisposable
         _hasLeader = leader != null;
         _leader = leader?.EndPoint?.ToString() ?? "";
         _isLeader = leader != null && !leader.IsRemote;
+        if (!_log) return;
         if (leader is null)
             _logger.LogInformation("Raft: leader lost");
         else

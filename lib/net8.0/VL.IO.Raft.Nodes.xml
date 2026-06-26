@@ -14,7 +14,7 @@
         <member name="M:VL.IO.Raft.LeaderElection.#ctor(VL.Core.NodeContext)">
             <inheritdoc />
         </member>
-        <member name="M:VL.IO.Raft.LeaderElection.Update(System.String@,System.Boolean@,System.Boolean@,System.String@,VL.Lib.Collections.Spread{System.String},System.Int32,System.Int32,System.Boolean,System.Boolean)">
+        <member name="M:VL.IO.Raft.LeaderElection.Update(System.String@,System.Boolean@,System.Boolean@,System.String@,VL.Lib.Collections.Spread{System.String},System.Int32,System.Int32,System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             Updates leader election state. Enable must be true for the cluster to start.
             </summary>
@@ -26,6 +26,7 @@
             <param name="port">TCP port all machines listen on.</param>
             <param name="localId">Index of this machine in the Hosts list. When Prioritize is enabled, lower index means higher election priority (more likely to become leader).</param>
             <param name="prioritize">When true, scales election timeouts by LocalId so the node with the lowest index is most likely to win. When false, all nodes have equal chance (standard Raft behaviour).</param>
+            <param name="log">When true (default), Raft internal messages are written to the vvvv log. Errors written to the Error pin are unaffected.</param>
             <param name="enable">Set to true to start the cluster.</param>
         </member>
         <member name="M:VL.IO.Raft.LeaderElection.Dispose">
