@@ -13,6 +13,8 @@ sealed class StaticConfigStorage : IClusterConfigurationStorage<EndPoint>, IClus
     private readonly HashSet<EndPoint> _proposed;
     private readonly HashSet<EndPoint> _active = new();
     private event Func<EndPoint, bool, CancellationToken, ValueTask>? _changed;
+    private long _activeFp = 0L;   // advances to 1L after the first ApplyAsync
+    private bool _hasPending = true; // cleared after the first ApplyAsync
 
     internal StaticConfigStorage(IEnumerable<EndPoint> nonSelfPeers)
         => _proposed = new HashSet<EndPoint>(nonSelfPeers);
@@ -41,11 +43,14 @@ sealed class StaticConfigStorage : IClusterConfigurationStorage<EndPoint>, IClus
         var toRemove = _active.Except(_proposed).ToList();
         foreach (var ep in toRemove) { _active.Remove(ep); if (_changed is { } h) await h(ep, false, ct); }
         foreach (var ep in toAdd)    { _active.Add(ep);    if (_changed is { } h) await h(ep, true,  ct); }
+        _activeFp = 1L;
+        _hasPending = false;
     }
 
-    // Fingerprints must differ so DotNext doesn't treat the apply as a no-op
-    IClusterConfiguration IClusterConfigurationStorage.ActiveConfiguration  => new StubConfig(0L);
-    IClusterConfiguration? IClusterConfigurationStorage.ProposedConfiguration => _proposed.Count > 0 ? new StubConfig(1L) : null;
+    // After the initial apply there is no pending configuration change.
+    // Returning null for ProposedConfiguration tells DotNext not to drive joint-consensus replication.
+    IClusterConfiguration IClusterConfigurationStorage.ActiveConfiguration   => new StubConfig(_activeFp);
+    IClusterConfiguration? IClusterConfigurationStorage.ProposedConfiguration => _hasPending ? new StubConfig(1L) : null;
 
     ValueTask IClusterConfigurationStorage.LoadConfigurationAsync(CancellationToken ct) => ValueTask.CompletedTask;
     ValueTask IClusterConfigurationStorage.ProposeAsync(IClusterConfiguration cfg, CancellationToken ct) => ValueTask.CompletedTask;
