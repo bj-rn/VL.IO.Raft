@@ -18,6 +18,7 @@ namespace VL.IO.Raft;
 public sealed class LeaderElection : IDisposable
 {
     private readonly ILogger _logger;
+    private readonly ILoggerFactory _loggerFactory;
     private RaftCluster? _cluster;
     private Spread<string>? _lastHosts;
     private int _lastPort;
@@ -31,7 +32,8 @@ public sealed class LeaderElection : IDisposable
     /// <inheritdoc />
     public LeaderElection(NodeContext nodeContext)
     {
-        _logger = nodeContext.AppHost.LoggerFactory.CreateLogger<LeaderElection>();
+        _loggerFactory = nodeContext.AppHost.LoggerFactory;
+        _logger = _loggerFactory.CreateLogger<LeaderElection>();
     }
 
     /// <summary>
@@ -91,7 +93,7 @@ public sealed class LeaderElection : IDisposable
         var localEndpoint = MakeEndpoint(hosts[localId], port);
         var config = new RaftCluster.TcpConfiguration(localEndpoint)
         {
-            ColdStart = true,
+            LoggerFactory = _loggerFactory,
         };
 
         if (prioritize)
@@ -102,14 +104,11 @@ public sealed class LeaderElection : IDisposable
             config.UpperElectionTimeout = 300 + localId * 50;
         }
 
-        // Only add peers — ColdStart registers the local node automatically.
-        // Adding self here too would create a duplicate and break leader detection on remote nodes.
+        // All nodes start with the same full member list (including self) and ColdStart = false.
+        // Raft holds a natural election once all nodes can communicate — no designated bootstrap node needed.
         var storage = config.UseInMemoryConfigurationStorage();
         for (int i = 0; i < hosts.Count; i++)
-        {
-            if (i != localId)
-                storage.AddMember(MakeEndpoint(hosts[i], port));
-        }
+            storage.AddMember(MakeEndpoint(hosts[i], port));
 
         _cluster = new RaftCluster(config);
         _cluster.LeaderChanged += OnLeaderChanged;
@@ -149,7 +148,12 @@ public sealed class LeaderElection : IDisposable
         _hasLeader = leader != null;
         _leader = leader?.EndPoint?.ToString() ?? "";
         _isLeader = leader != null && !leader.IsRemote;
+        if (leader is null)
+            _logger.LogInformation("Raft: leader lost");
+        else
+            _logger.LogInformation("Raft: new leader {Leader} (isLocal={IsLocal})", _leader, _isLeader);
     }
+
 
     /// <inheritdoc />
     public void Dispose() => StopCluster();
