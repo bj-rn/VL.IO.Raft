@@ -62,9 +62,23 @@ One thing to be aware of: if the rejoining node was the previous leader, the rem
 ### Notes
 
 - All machines must use the same `Hosts` list in the same order.
-- The cluster uses a static membership list. All nodes start with `ColdStart = true` and the same full member list, so they hold a shared initial election rather than each bootstrapping independently. See [DotNext cold start docs](https://dotnet.github.io/dotNext/features/cluster/raft.html) for details on the dynamic membership model.
+- The cluster uses a static membership list. All nodes start with `ColdStart = true` and immediately hold an election. Each node's member list is pre-seeded with all configured peers so that proper quorum (majority) is required — no node can win a solo election when others are reachable.
 - Transport is TCP (no ASP.NET Core required). See [DotNext transport options](https://dotnet.github.io/dotNext/features/cluster/raft.html) for HTTP alternatives.
 - This library uses `ConsensusOnlyState` (the DotNext default) — no data is replicated, only the leader identity is established.
+
+### Quorum and fault tolerance
+
+| Cluster size | Votes needed | Max simultaneous failures |
+|---|---|---|
+| 2 | 2 / 2 | 0 — losing either node = no quorum |
+| 3 | 2 / 3 | 1 |
+| 4 | 3 / 4 | 1 |
+| 5 | 3 / 5 | 2 |
+| N | ⌊N/2⌋ + 1 | ⌊N/2⌋ |
+
+**2-node clusters**: a 2-node cluster requires both nodes to be online for any election to succeed. This is an inherent Raft property, not a library limitation. Consider a 3-node cluster for fault tolerance.
+
+**Arbitrary startup order**: nodes that start early will fail their elections (cannot reach majority of a still-offline cluster) and keep retrying with randomised timeouts. Once a majority of configured nodes is online, an election succeeds automatically — no restart or manual intervention required.
 
 ---
 

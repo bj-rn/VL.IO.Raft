@@ -1,6 +1,7 @@
 using DotNext.Net.Cluster;
 using DotNext.Net.Cluster.Consensus.Raft;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 using System.Net;
 using VL.Core;
 using VL.Core.Import;
@@ -94,9 +95,6 @@ public sealed class LeaderElection : IDisposable
         var config = new RaftCluster.TcpConfiguration(localEndpoint)
         {
             LoggerFactory = _loggerFactory,
-            // All nodes bootstrap simultaneously with the same full member list.
-            // ColdStart = true means "start a new cluster / hold an initial election",
-            // as opposed to false which means "join an already-running cluster".
             ColdStart = true,
         };
 
@@ -108,14 +106,14 @@ public sealed class LeaderElection : IDisposable
             config.UpperElectionTimeout = 300 + localId * 50;
         }
 
-        // Initialise the ACTIVE configuration with all members (including self).
-        // AddMember() only proposes a change and silently rejects subsequent calls — Build() must be used
-        // to set the active membership before the cluster starts so all nodes have the same view.
-        var storage = config.UseInMemoryConfigurationStorage();
-        var memberBuilder = storage.CreateActiveConfigurationBuilder();
-        for (int i = 0; i < hosts.Count; i++)
-            memberBuilder.Add(MakeEndpoint(hosts[i], port));
-        memberBuilder.Build();
+        // DotNext reads ProposedConfiguration (typed IReadOnlySet<EndPoint>) to build its internal
+        // members list on startup. StaticConfigStorage wraps the InMemory storage and returns all
+        // N-1 non-self peers from that property so every node starts elections with the full cluster view.
+        var innerStorage = config.UseInMemoryConfigurationStorage();
+        var peers = Enumerable.Range(0, hosts.Count)
+            .Where(i => i != localId)
+            .Select(i => (EndPoint)MakeEndpoint(hosts[i], port));
+        config.ConfigurationStorage = new StaticConfigStorage(innerStorage, peers);
 
         _cluster = new RaftCluster(config);
         _cluster.LeaderChanged += OnLeaderChanged;
