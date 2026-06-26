@@ -104,11 +104,14 @@ public sealed class LeaderElection : IDisposable
             config.UpperElectionTimeout = 300 + localId * 50;
         }
 
-        // All nodes start with the same full member list (including self) and ColdStart = false.
-        // Raft holds a natural election once all nodes can communicate — no designated bootstrap node needed.
+        // Initialise the ACTIVE configuration with all members (including self).
+        // AddMember() only proposes a change and silently rejects subsequent calls — Build() must be used
+        // to set the active membership before the cluster starts so all nodes have the same view.
         var storage = config.UseInMemoryConfigurationStorage();
+        var memberBuilder = storage.CreateActiveConfigurationBuilder();
         for (int i = 0; i < hosts.Count; i++)
-            storage.AddMember(MakeEndpoint(hosts[i], port));
+            memberBuilder.Add(MakeEndpoint(hosts[i], port));
+        memberBuilder.Build();
 
         _cluster = new RaftCluster(config);
         _cluster.LeaderChanged += OnLeaderChanged;
