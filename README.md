@@ -86,7 +86,7 @@ One thing to be aware of: if the rejoining node was the previous leader, the rem
 ## Getting started
 - Install as [described here](https://thegraybook.vvvv.org/reference/hde/managing-nugets.html) via commandline:
 
-    `nuget VL.IO.Raft`
+    `nuget install VL.IO.Raft`
 
 - The near future: Install the `VL.IO.Raft` NuGet package via the vvvv package manager.
 
