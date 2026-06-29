@@ -40,7 +40,7 @@ All machines should converge on the same leader within ~1 second. If the current
 
 ### Election Priority
 
-Standard Raft uses randomised election timeouts to break ties — the node that times out first becomes a candidate and usually wins. With `Prioritize = false` (the default) all nodes use the same timeout range and have equal chance of winning.
+Standard Raft uses randomised election timeouts to break ties, the node that times out first becomes a candidate and usually wins. With `Prioritize = false` (the default) all nodes use the same timeout range and have equal chance of winning.
 
 When `Prioritize = true`, the timeout is scaled by `LocalId`:
 
@@ -62,15 +62,15 @@ One thing to be aware of: if the rejoining node was the previous leader, the rem
 ### Notes
 
 - All machines must use the same `Hosts` list in the same order.
-- The cluster uses a static membership list. All nodes start with `ColdStart = true` and immediately hold an election. Each node's member list is pre-seeded with all configured peers so that proper quorum (majority) is required — no node can win a solo election when others are reachable.
+- The cluster uses a static membership list. All nodes start with `ColdStart = true` and immediately hold an election. Each node's member list is pre-seeded with all configured peers so that proper quorum (majority) is required, no node can win a solo election when others are reachable.
 - Transport is TCP (no ASP.NET Core required). See [DotNext transport options](https://dotnet.github.io/dotNext/features/cluster/raft.html) for HTTP alternatives.
-- This library uses `ConsensusOnlyState` (the DotNext default) — no data is replicated, only the leader identity is established.
+- This library uses `ConsensusOnlyState` (the DotNext default). No data is replicated, only the leader identity is established.
 
 ### Quorum and fault tolerance
 
 | Cluster size | Votes needed | Max simultaneous failures |
 |---|---|---|
-| 2 | 2 / 2 | 0 — losing either node = no quorum |
+| 2 | 2 / 2 | 0  (losing either node = no quorum) |
 | 3 | 2 / 3 | 1 |
 | 4 | 3 / 4 | 1 |
 | 5 | 3 / 5 | 2 |
@@ -78,7 +78,7 @@ One thing to be aware of: if the rejoining node was the previous leader, the rem
 
 **2-node clusters**: a 2-node cluster requires both nodes to be online for any election to succeed. This is an inherent Raft property, not a library limitation. Consider a 3-node cluster for fault tolerance.
 
-**Arbitrary startup order**: nodes that start early will fail their elections (cannot reach majority of a still-offline cluster) and keep retrying with randomised timeouts. Once a majority of configured nodes is online, an election succeeds automatically — no restart or manual intervention required.
+**Arbitrary startup order**: nodes that start early will fail their elections (cannot reach majority of a still-offline cluster) and keep retrying with randomised timeouts. Once a majority of configured nodes is online, an election succeeds automatically. No restart or manual intervention required.
 
 ---
 
@@ -103,7 +103,7 @@ DotNext 6.x requires net10 and has an incompatible wire protocol. To upgrade:
 
 1. Update `DotNext.Net.Cluster` to `6.*` in `src/VL.IO.Raft.csproj`.
 2. Rebuild.
-3. Update **all** cluster nodes simultaneously — a mixed 5.x/6.x cluster will not work.
+3. Update **all** cluster nodes simultaneously, a mixed 5.x/6.x cluster will not work.
 
 ---
 
