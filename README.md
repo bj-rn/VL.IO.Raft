@@ -28,6 +28,8 @@ Runs a Raft consensus cluster among a fixed set of known machines and surfaces t
 | Leader | string | `host:port` of the current leader, empty string if no leader is known yet |
 | IsLeader | bool | True if this machine is the current leader |
 | HasLeader | bool | True if any leader is known |
+| Term | long | Current Raft term number. Increments on every election; useful as a change signal |
+| Members | Spread\<IClusterMember\> | All cluster members. Use the `Split (IClusterMember)` node to read per-member `EndPoint`, `IsLeader`, `IsRemote`, and `Status` |
 | Error | string | Error message if the cluster failed to start |
 
 ### Usage
