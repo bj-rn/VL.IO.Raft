@@ -18,6 +18,7 @@ Runs a Raft consensus cluster among a fixed set of known machines and surfaces t
 | Port | int | 3262 | TCP port all machines listen on |
 | LocalId | int | 0 | Index of **this** machine in the Hosts list. When Prioritize is enabled, lower index means higher election priority |
 | Prioritize | bool | false | When true, scales election timeouts by LocalId so the node with the lowest index is most likely to win. When false, all nodes have equal chance (standard Raft behaviour) |
+| Log | bool | true | *(optional)* When true, Raft internal messages (elections, heartbeats, leader changes) are written to the vvvv log. Errors written to the Error pin are unaffected by this setting |
 | Enable | bool | false | Set to true to start the cluster |
 
 ### Outputs
