@@ -32,6 +32,7 @@ public sealed class LeaderElection : IDisposable
     private volatile bool _isLeader;
     private volatile bool _hasLeader;
     private volatile string _error = "";
+    private Spread<IClusterMember> _members = Spread<IClusterMember>.Empty;
 
     /// <inheritdoc />
     public LeaderElection(NodeContext nodeContext)
@@ -46,6 +47,8 @@ public sealed class LeaderElection : IDisposable
     /// <param name="leader">Host:port of the current leader, empty if no leader is known yet.</param>
     /// <param name="isLeader">True if this machine is the current leader.</param>
     /// <param name="hasLeader">True if any leader is known.</param>
+    /// <param name="term">Current Raft term number. Increments on every election.</param>
+    /// <param name="members">All cluster members. Use Split (IClusterMember) to read per-member properties.</param>
     /// <param name="error">Error message if the cluster failed to start, otherwise empty.</param>
     /// <param name="hosts">IP addresses or hostnames of all machines in the cluster, in the same order on every machine.</param>
     /// <param name="port">TCP port all machines listen on.</param>
@@ -57,6 +60,8 @@ public sealed class LeaderElection : IDisposable
         out string leader,
         out bool isLeader,
         out bool hasLeader,
+        out long term,
+        out Spread<IClusterMember> members,
         [Pin(Visibility = PinVisibility.Optional)] out string error,
         Spread<string> hosts,
         int port = 3262,
@@ -101,9 +106,14 @@ public sealed class LeaderElection : IDisposable
             _lastHosts = null;
         }
 
+        if (_cluster != null && _members.IsEmpty)
+            _members = _cluster.Members.Cast<IClusterMember>().ToSpread();
+
         leader = _leader;
         isLeader = _isLeader;
         hasLeader = _hasLeader;
+        term = _cluster?.Term ?? 0L;
+        members = _members;
         error = _error;
     }
 
@@ -162,6 +172,7 @@ public sealed class LeaderElection : IDisposable
         _leader = "";
         _isLeader = false;
         _hasLeader = false;
+        _members = Spread<IClusterMember>.Empty;
     }
 
     private void OnLeaderChanged(ICluster cluster, IClusterMember? leader)
