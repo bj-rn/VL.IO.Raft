@@ -27,7 +27,7 @@ public sealed class LeaderElection : IDisposable
     private int _lastLocalId;
     private bool _lastPrioritize;
     private bool _lastLog = true;
-    private bool _log = true;
+    private volatile bool _log = true;
     private volatile string _leader = "";
     private volatile bool _isLeader;
     private volatile bool _hasLeader;
@@ -80,7 +80,19 @@ public sealed class LeaderElection : IDisposable
                 _lastPrioritize = prioritize;
                 _lastLog = log;
                 if (localId >= 0 && localId < hosts.Count)
-                    StartCluster(hosts, port, localId, prioritize, log);
+                {
+                    try { StartCluster(hosts, port, localId, prioritize, log); }
+                    catch (Exception ex)
+                    {
+                        var inner = ex.GetBaseException();
+                        _error = inner.Message;
+                        _logger.LogError(inner, "Raft cluster failed to start");
+                    }
+                }
+                else
+                {
+                    _error = $"LocalId {localId} is out of range for {hosts.Count} hosts.";
+                }
             }
         }
         else if (_cluster != null)
@@ -125,8 +137,8 @@ public sealed class LeaderElection : IDisposable
         _ = _cluster.StartAsync(CancellationToken.None).ContinueWith(
             t =>
             {
-                var ex = t.Exception?.GetBaseException();
-                _error = ex?.Message ?? "Start failed";
+                var ex = t.Exception!.GetBaseException();
+                _error = ex.Message;
                 if (_log) _logger.LogError(ex, "Raft cluster failed to start");
             },
             CancellationToken.None,
